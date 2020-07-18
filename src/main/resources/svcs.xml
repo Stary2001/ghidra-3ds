@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svcs>
+    <svc number="0x01">
+        <name>svcControlMemory</name>
+    </svc>
+    <svc number="0x02">
+        <name>svcQueryMemory</name>
+    </svc>
+    <svc number="0x03">
+        <name>svcExitProcess</name>
+        <attributes>noreturn</attributes>
+    </svc>
+    <svc number="0x04">
+        <name>svcGetProcessAffinityMask</name>
+    </svc>
+    <svc number="0x05">
+        <name>svcSetProcessAffinityMask</name>
+    </svc>
+    <svc number="0x06">
+        <name>svcGetProcessIdealProcessor</name>
+    </svc>
+    <svc number="0x07">
+        <name>svcSetProcessIdealProcessor</name>
+    </svc>
+    <svc number="0x08">
+        <name>svcCreateThread</name>
+    </svc>
+    <svc number="0x09">
+        <name>svcExitThread</name>
+        <attributes>noreturn</attributes>
+    </svc>
+    <svc number="0x0A">
+        <name>svcSleepThread</name>
+    </svc>
+    <svc number="0x0B">
+        <name>svcGetThreadPriority</name>
+    </svc>
+    <svc number="0x0C">
+        <name>svcSetThreadPriority</name>
+    </svc>
+    <svc number="0x0D">
+        <name>svcGetThreadAffinityMask</name>
+    </svc>
+    <svc number="0x0E">
+        <name>svcSetThreadAffinityMask</name>
+    </svc>
+    <svc number="0x0F">
+        <name>svcGetThreadIdealProcessor</name>
+    </svc>
+    <svc number="0x10">
+        <name>svcSetThreadIdealProcessor</name>
+    </svc>
+    <svc number="0x11">
+        <name>svcGetCurrentProcessorNumber</name>
+    </svc>
+    <svc number="0x12">
+        <name>svcRun</name>
+    </svc>
+    <svc number="0x13">
+        <name>svcCreateMutex</name>
+    </svc>
+    <svc number="0x14">
+        <name>svcReleaseMutex</name>
+    </svc>
+    <svc number="0x15">
+        <name>svcCreateSemaphore</name>
+    </svc>
+    <svc number="0x16">
+        <name>svcReleaseSemaphore</name>
+    </svc>
+    <svc number="0x17">
+        <name>svcCreateEvent</name>
+    </svc>
+    <svc number="0x18">
+        <name>svcSignalEvent</name>
+    </svc>
+    <svc number="0x19">
+        <name>svcClearEvent</name>
+    </svc>
+    <svc number="0x1A">
+        <name>svcCreateTimer</name>
+    </svc>
+    <svc number="0x1B">
+        <name>svcSetTimer</name>
+    </svc>
+    <svc number="0x1C">
+        <name>svcCancelTimer</name>
+    </svc>
+    <svc number="0x1D">
+        <name>svcClearTimer</name>
+    </svc>
+    <svc number="0x1E">
+        <name>svcCreateMemoryBlock</name>
+    </svc>
+    <svc number="0x1F">
+        <name>svcMapMemoryBlock</name>
+    </svc>
+    <svc number="0x20">
+        <name>svcUnmapMemoryBlock</name>
+    </svc>
+    <svc number="0x21">
+        <name>svcCreateAddressArbiter</name>
+    </svc>
+    <svc number="0x22">
+        <name>svcArbitrateAddress</name>
+    </svc>
+    <svc number="0x23">
+        <name>svcCloseHandle</name>
+    </svc>
+    <svc number="0x24">
+        <name>svcWaitSynchronization</name>
+    </svc>
+    <svc number="0x25">
+        <name>svcWaitSynchronizationN</name>
+    </svc>
+    <svc number="0x26">
+        <name>svcSignalAndWait</name>
+    </svc>
+    <svc number="0x27">
+        <name>svcDuplicateHandle</name>
+    </svc>
+    <svc number="0x28">
+        <name>svcGetSystemTick</name>
+    </svc>
+    <svc number="0x29">
+        <name>svcGetHandleInfo</name>
+    </svc>
+    <svc number="0x2A">
+        <name>svcGetSystemInfo</name>
+    </svc>
+    <svc number="0x2B">
+        <name>svcGetProcessInfo</name>
+    </svc>
+    <svc number="0x2C">
+        <name>svcGetThreadInfo</name>
+    </svc>
+    <svc number="0x2D">
+        <name>svcConnectToPort</name>
+    </svc>
+    <svc number="0x2E">
+        <name>svcSendSyncRequest1</name>
+    </svc>
+    <svc number="0x2F">
+        <name>svcSendSyncRequest2</name>
+    </svc>
+    <svc number="0x30">
+        <name>svcSendSyncRequest3</name>
+    </svc>
+    <svc number="0x31">
+        <name>svcSendSyncRequest4</name>
+    </svc>
+    <svc number="0x32">
+        <name>svcSendSyncRequest</name>
+    </svc>
+    <svc number="0x33">
+        <name>svcOpenProcess</name>
+    </svc>
+    <svc number="0x34">
+        <name>svcOpenThread</name>
+    </svc>
+    <svc number="0x35">
+        <name>svcGetProcessId</name>
+    </svc>
+    <svc number="0x36">
+        <name>svcGetProcessIdOfThread</name>
+    </svc>
+    <svc number="0x37">
+        <name>svcGetThreadId</name>
+    </svc>
+    <svc number="0x38">
+        <name>svcGetResourceLimit</name>
+    </svc>
+    <svc number="0x39">
+        <name>svcGetResourceLimitLimitValues</name>
+    </svc>
+    <svc number="0x3A">
+        <name>svcGetResourceLimitCurrentValues</name>
+    </svc>
+    <svc number="0x3B">
+        <name>svcGetThreadContext</name>
+    </svc>
+    <svc number="0x3C">
+        <name>svcBreak</name>
+        <attributes>noreturn</attributes>
+    </svc>
+    <svc number="0x3D">
+        <name>svcOutputDebugString</name>
+    </svc>
+    <svc number="0x3E">
+        <name>svcControlPerformanceCounter</name>
+    </svc>
+    <svc number="0x47">
+        <name>svcCreatePort</name>
+    </svc>
+    <svc number="0x48">
+        <name>svcCreateSessionToPort</name>
+    </svc>
+    <svc number="0x49">
+        <name>svcCreateSession</name>
+    </svc>
+    <svc number="0x4A">
+        <name>svcAcceptSession</name>
+    </svc>
+    <svc number="0x4B">
+        <name>svcReplyAndReceive1</name>
+    </svc>
+    <svc number="0x4C">
+        <name>svcReplyAndReceive2</name>
+    </svc>
+    <svc number="0x4D">
+        <name>svcReplyAndReceive3</name>
+    </svc>
+    <svc number="0x4E">
+        <name>svcReplyAndReceive4</name>
+    </svc>
+    <svc number="0x4F">
+        <name>svcReplyAndReceive</name>
+    </svc>
+    <svc number="0x50">
+        <name>svcBindInterrupt</name>
+    </svc>
+    <svc number="0x51">
+        <name>svcUnbindInterrupt</name>
+    </svc>
+    <svc number="0x52">
+        <name>svcInvalidateProcessDataCache</name>
+    </svc>
+    <svc number="0x53">
+        <name>svcStoreProcessDataCache</name>
+    </svc>
+    <svc number="0x54">
+        <name>svcFlushProcessDataCache</name>
+    </svc>
+    <svc number="0x55">
+        <name>svcStartInterProcessDma</name>
+    </svc>
+    <svc number="0x56">
+        <name>svcStopDma</name>
+    </svc>
+    <svc number="0x57">
+        <name>svcGetDmaState</name>
+    </svc>
+    <svc number="0x58">
+        <name>svcRestartDma</name>
+    </svc>
+    <svc number="0x59">
+        <name>svcSetGpuProt</name>
+    </svc>
+    <svc number="0x5A">
+        <name>svcSetWifiEnabled</name>
+    </svc>
+    <svc number="0x60">
+        <name>svcDebugActiveProcess</name>
+    </svc>
+    <svc number="0x61">
+        <name>svcBreakDebugProcess</name>
+    </svc>
+    <svc number="0x62">
+        <name>svcTerminateDebugProcess</name>
+    </svc>
+    <svc number="0x63">
+        <name>svcGetProcessDebugEvent</name>
+    </svc>
+    <svc number="0x64">
+        <name>svcContinueDebugEvent</name>
+    </svc>
+    <svc number="0x65">
+        <name>svcGetProcessList</name>
+    </svc>
+    <svc number="0x66">
+        <name>svcGetThreadList</name>
+    </svc>
+    <svc number="0x67">
+        <name>svcGetDebugThreadContext</name>
+    </svc>
+    <svc number="0x68">
+        <name>svcSetDebugThreadContext</name>
+    </svc>
+    <svc number="0x69">
+        <name>svcQueryDebugProcessMemory</name>
+    </svc>
+    <svc number="0x6A">
+        <name>svcReadProcessMemory</name>
+    </svc>
+    <svc number="0x6B">
+        <name>svcWriteProcessMemory</name>
+    </svc>
+    <svc number="0x6C">
+        <name>svcSetHardwareBreakPoint</name>
+    </svc>
+    <svc number="0x6D">
+        <name>svcGetDebugThreadParam</name>
+    </svc>
+    <svc number="0x70">
+        <name>svcControlProcessMemory</name>
+    </svc>
+    <svc number="0x71">
+        <name>svcMapProcessMemory</name>
+    </svc>
+    <svc number="0x72">
+        <name>svcUnmapProcessMemory</name>
+    </svc>
+    <svc number="0x73">
+        <name>svcCreateCodeSet</name>
+    </svc>
+    <svc number="0x74">
+        <name>svcRandomStub</name>
+    </svc>
+    <svc number="0x75">
+        <name>svcCreateProcess</name>
+    </svc>
+    <svc number="0x76">
+        <name>svcTerminateProcess</name>
+    </svc>
+    <svc number="0x77">
+        <name>svcSetProcessResourceLimits</name>
+    </svc>
+    <svc number="0x78">
+        <name>svcCreateResourceLimit</name>
+    </svc>
+    <svc number="0x79">
+        <name>svcSetResourceLimitValues</name>
+    </svc>
+    <svc number="0x7A">
+        <name>svcAddCodeSegment</name>
+    </svc>
+    <svc number="0x7B">
+        <name>svcBackdoor</name>
+    </svc>
+    <svc number="0x7C">
+        <name>svcKernelSetState</name>
+    </svc>
+    <svc number="0x7D">
+        <name>svcQueryProcessMemory</name>
+    </svc>
+</svcs>

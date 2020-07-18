@@ -15,9 +15,7 @@
  */
 package ghidra_3ds;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 import adubbz.nx.loader.common.MemoryBlockHelper;
@@ -31,15 +29,11 @@ import ghidra.app.util.opinion.AbstractLibrarySupportLoader;
 import ghidra.app.util.opinion.LoadSpec;
 import ghidra.framework.model.DomainObject;
 import ghidra.framework.store.LockException;
-import ghidra.program.database.mem.FileBytes;
-import ghidra.program.flatapi.FlatProgramAPI;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.Memory;
-import ghidra.program.model.mem.MemoryBlock;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
@@ -69,10 +63,7 @@ public class Ghidra_3DSLoader extends AbstractLibrarySupportLoader {
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log)
 			throws CancelledException, IOException {
-		
-		FlatProgramAPI api = new FlatProgramAPI(program,monitor);
-        Memory mem = program.getMemory();
-		
+
         NCCHFile ncch = new NCCHFile(provider);
         
         ExeFSFile code_file = null;
@@ -131,7 +122,7 @@ public class Ghidra_3DSLoader extends AbstractLibrarySupportLoader {
 			super.getDefaultOptions(provider, loadSpec, domainObject, isLoadIntoProgram);
 
 		// TODO: If this loader has custom options, add them to 'list'
-		list.add(new Option("Option name goes here", "Default option value goes here"));
+		//list.add(new Option("Option name goes here", "Default option value goes here"));
 
 		return list;
 	}

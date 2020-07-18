@@ -1,7 +1,6 @@
 package ghidra_3ds;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
