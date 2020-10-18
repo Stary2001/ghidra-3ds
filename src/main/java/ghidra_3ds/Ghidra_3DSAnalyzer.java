@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalyzerType;
@@ -36,12 +38,20 @@ import ghidra.app.util.cparser.C.CParser;
 import ghidra.app.util.cparser.C.ParseException;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
+import ghidra.framework.store.LockException;
+import ghidra.pcode.emulate.BreakCallBack;
+import ghidra.pcode.emulate.EmulateDisassemblerContext;
+import ghidra.pcode.pcoderaw.PcodeOpRaw;
+import ghidra.program.disassemble.Disassembler;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.lang.OperandType;
+import ghidra.program.model.lang.ProcessorContextImpl;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.lang.RegisterValue;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Instruction;
@@ -52,6 +62,8 @@ import ghidra.program.model.listing.ProgramContext;
 import ghidra.program.model.listing.ReturnParameterImpl;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.mem.MemoryConflictException;
 import ghidra.program.model.pcode.HighFunction;
 import ghidra.program.model.pcode.PcodeBlockBasic;
 import ghidra.program.model.pcode.PcodeOp;
@@ -78,8 +90,14 @@ import ghidra.xml.XmlPullParser;
 import ghidra.xml.XmlPullParserFactory;
 
 import ghidra.app.cmd.function.ApplyFunctionDataTypesCmd;
+import ghidra.app.decompiler.ClangFuncNameToken;
+import ghidra.app.decompiler.ClangLine;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
+import ghidra.app.decompiler.component.DecompilerUtils;
+import ghidra.app.emulator.Emulator;
+import ghidra.app.emulator.EmulatorConfiguration;
+import ghidra.app.emulator.EmulatorHelper;
 import ghidra.app.plugin.core.analysis.ConstantPropagationContextEvaluator;
 import resources.ResourceManager;
 import org.xml.sax.*;
@@ -133,7 +151,12 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 
 	Map<Integer, SVCInfo> svc_info;
 	Map<String, Map<Long, String>> ipc_function_info;
+	
+	Map<Address, Integer> clrex_table;
 
+	EmulatorHelper emu_helper;
+	Emulator emu;
+	
 	public Ghidra_3DSAnalyzer() throws IOException, SAXException {
 		super("3DS IPC Analyser", "", AnalyzerType.INSTRUCTION_ANALYZER);
 		this.setSupportsOneTimeAnalysis();
@@ -227,6 +250,74 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
+		
+		// Emulator setup
+		emu_helper = new EmulatorHelper(program);
+		emu = new Emulator(emu_helper);
+		
+		Address tls_block_addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(0xaaaa0000);
+		try {
+			emu_helper.createMemoryBlockFromMemoryState("tls", tls_block_addr, 0x1000, false, monitor);
+		}
+		catch(Exception exc) {
+			System.out.println("exception " + exc.toString());
+			//return new HashMap<>();
+		}
+		
+		Address stack_block_addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(0xbbbb0000);
+		try {
+			emu_helper.createMemoryBlockFromMemoryState("stack", stack_block_addr, 0x1000, false, monitor);
+		}
+		catch(Exception exc) {
+			System.out.println("exception " + exc.toString());
+		}
+		
+		emu_helper.enableMemoryWriteTracking(true);
+		emu_helper.registerCallOtherCallback("coproc_movefrom_User_R_Thread_and_Process_ID", new BreakCallBack() {
+			public boolean pcodeCallback(PcodeOpRaw op) {
+				System.out.println("tls callback hit at " +op.toString()+" addr "+emulate.getExecuteAddress().getOffset());
+				emulate.getMemoryState().setValue(op.getOutput(), 0xaaaa0000);
+				return true;
+			}
+		});
+
+		// todo: stop on the right svc?
+		emu_helper.registerCallOtherCallback("software_interrupt", new BreakCallBack() {
+			public boolean pcodeCallback(PcodeOpRaw op) {
+				System.out.println("swi callback hit at " +op.toString()+" addr "+emulate.getExecuteAddress().getOffset());
+				System.out.println("got " + op.getInput(1).getOffset());
+				
+				return true;
+			}
+		});
+		
+		emu_helper.registerCallOtherCallback("hasExclusiveAccess", new BreakCallBack() {
+			public boolean pcodeCallback(PcodeOpRaw op) {
+				System.out.println("hasExclusiveAccess callback hit at " +op.toString()+" addr "+emulate.getExecuteAddress().getOffset());
+				// dude trust me
+				emulate.getMemoryState().setValue(op.getOutput(), 1);
+				return true;
+			}
+		});
+		
+		clrex_table = new HashMap<Address, Integer>();
+		emu_helper.registerCallOtherCallback("ClearExclusiveLocal", new BreakCallBack() {
+			public boolean pcodeCallback(PcodeOpRaw op) {
+				Address addr = emulate.getExecuteAddress();
+				Function func = program.getFunctionManager().getFunctionContaining(addr);
+				
+				int n = clrex_table.getOrDefault(addr, 0);
+				clrex_table.put(addr, n+1);
+				if(n == 2) {
+					// no progress, probably
+					//emulate.getMemoryState().setValue("sp", emulate.getMemoryState().getValue("sp"));
+					//emulate.getMemoryState().setValue("pc", emulate.getMemoryState().getValue("lr"));
+				}
+				System.out.println("clrex callback hit at " +op.toString()+" addr "+emulate.getExecuteAddress().getOffset());
+				return true;
+			}
+		});
+		
 		DataTypeManager dtm = program.getDataTypeManager();
 		
 		CParser svc_parser = new CParser(dtm, true, null);
@@ -308,7 +399,8 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 			}
 		}
 		
-		if(svc_connect_to_port != null && svc_send_sync != null) {
+		boolean accept_things_are_broken = false;
+		if(accept_things_are_broken && svc_connect_to_port != null && svc_send_sync != null) {
 			Set<Function> port_functions = svc_connect_to_port.getCallingFunctions(monitor);
 			for(Function f: port_functions) {
 				Set<Address> call_sites = getCallSites(program, f, svc_connect_to_port, monitor);
@@ -367,7 +459,7 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 					}
 				}
 			}
-			
+
 			SymbolIterator it = program.getSymbolTable().getSymbolIterator();
 			for(Symbol sym: it) {
 				String name = sym.getName();
@@ -401,7 +493,6 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 	}
 	
 	Set<Function> labelIpc(Program program, TaskMonitor monitor, Set<Function> port_functions, String service_name, Map<Long, String> id_mapping, Symbol handle_symbol) {		
-		//Symbol handle_symbol = program.getSymbolTable().getGlobalSymbols(handle_name).get(0);
 		Address handle_address = handle_symbol.getAddress();
 		
 		Set<Function> ipc_functions = new HashSet<Function>();
@@ -429,6 +520,10 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 		}
 		
 		return ipc_functions;
+	}
+	
+	boolean decompilerFunctionFilter() {
+		return true;
 	}
 	
 	// TODO: this sucks major ass, gut it and replace with emulation
@@ -514,8 +609,8 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 	}
 	
 	private Map<Address, FuncArgs> resolveConstants(Function func, Set<Address> call_sites,
-			Program program, TaskMonitor tMonitor) throws CancelledException {
-		Map<Address, FuncArgs> values = new HashMap<>();
+			Program program, TaskMonitor monitor) throws CancelledException {
+		/*Map<Address, FuncArgs> values = new HashMap<>();
 		
 		ProgramContext ctx = program.getProgramContext();
 		
@@ -540,6 +635,40 @@ public class Ghidra_3DSAnalyzer extends AbstractAnalyzer {
 			}
 			values.put(call_site, new FuncArgs(val_r0.getValue(), val_r1.getValue()));
 		}
-		return values;
+		return values;*/
+		
+		for (Address call_site : call_sites) {
+			System.out.println("Emulating function " + func.getName() + " at " + func.getEntryPoint().toString());
+			clrex_table.clear();
+
+			ProcessorContextImpl context = new ProcessorContextImpl(program.getLanguage());
+			context.setRegisterValue(new RegisterValue(context.getRegister("r0"), BigInteger.valueOf(0xffff0000)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r1"), BigInteger.valueOf(0xffff1000)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r2"), BigInteger.valueOf(0xffff2000)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r3"), BigInteger.valueOf(0xffff3000)));
+			
+			context.setRegisterValue(new RegisterValue(context.getRegister("lr"), BigInteger.valueOf(0xffff4000)));
+
+			context.setRegisterValue(new RegisterValue(context.getRegister("r4"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r5"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r6"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r7"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r8"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r9"), BigInteger.valueOf(0)));
+			context.setRegisterValue(new RegisterValue(context.getRegister("r10"), BigInteger.valueOf(0)));
+			
+			context.setRegisterValue(new RegisterValue(context.getRegister("sp"), BigInteger.valueOf(0xbbbbfff0)));
+	
+			//emu_helper.setBreakpoint(call_site);
+			
+			if(emu_helper.run(func.getEntryPoint(), context, monitor)) {
+				System.out.println("pog");
+			}
+			else {
+				System.out.println("error: " + emu_helper.getLastError());
+			}
+		}
+
+		return new HashMap<>();
 	}
 }
