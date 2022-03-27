@@ -53,11 +53,8 @@ public class Ghidra_3DSLoader extends AbstractLibrarySupportLoader {
 		BinaryReader reader = new BinaryReader(provider, true);
 		// For now just check NCCH magic, worry about CFAs later
 		String magic = reader.readAsciiString(0x100, 4);
-		if(magic.equals("NCCH")) { 
-			// the 3ds is arm11 aka armv6
-			// but ghidra machine broke, so we use v7 
-			// see https://github.com/NationalSecurityAgency/ghidra/issues/1539
-			loadSpecs.add(new LoadSpec(this, 0, new LanguageCompilerSpecPair("ARM:LE:32:v7", "default"), true));
+		if(magic.equals("NCCH")) {
+			loadSpecs.add(new LoadSpec(this, 0, new LanguageCompilerSpecPair("ARM:LE:32:v6", "default"), true));
 		}
 		return loadSpecs;
 	}
